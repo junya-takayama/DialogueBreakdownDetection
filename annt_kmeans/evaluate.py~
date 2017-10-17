@@ -1,0 +1,87 @@
+import json
+import glob
+from keras.models import Sequential
+import keras
+from keras.layers import Merge, LSTM, Dense,GRU
+from keras.preprocessing import sequence
+from keras.layers.wrappers import Bidirectional
+import numpy as np
+import pickle
+from sklearn.cluster import KMeans,DBSCAN
+from sklearn.neighbors import KNeighborsClassifier
+from pprint import pprint
+from sklearn.externals import joblib
+import sys
+import time
+from utils import Preprocess, Ensemble,translate
+
+n_clusters = int(sys.argv[1])
+namehead = sys.argv[2]
+
+modeldir = './models/classifier/'  
+from gensim.models import word2vec
+w2vpath='./models/w2v/w2v_512.model'
+w2v = word2vec.Word2Vec.load(w2vpath)
+clf = Ensemble(namehead,n_clusters,method='mean',normalization='norm')
+preprocess = Preprocess(w2vpath=w2vpath)
+pad_size = 40
+
+        
+class Progress:
+    def __init__(self,Max,domain):
+        self.max = Max
+        self.domain = domain
+        self.current = 0
+        self.now = None
+        self.start = time.time()
+    def __call__(self):
+        self.current += 1
+        self.now = time.time() - self.start
+        pred = (self.max-self.current)*(self.now/self.current) if self.now != None else "unknown"
+        sys.stdout.write("\r\033[K"+self.domain+" : "+str(self.current)+"/"+str(self.max)+"\t経過"+ ("%03.3f" % self.now)+
+                         "秒\tあと"+ ("%03.3f" % pred) +"秒")
+        sys.stdout.flush()
+        if self.current == self.max:
+            print()
+        
+        
+for domain in ["DCM","DIT","IRS"]:
+    fps = glob.glob("../DBDC2_ref/"+domain+"/*.json")
+    prog = Progress(len(fps),domain)
+    for fp in fps:
+        datas = json.load(open(fp,'r'))
+        dataID = fp.split('/')[-1].strip(".log.json")
+        prog()
+        user = [""]
+        user.extend([datas['turns'][i]['utterance'] for i in range(1,len(datas['turns']),2)])
+        system = [datas['turns'][i]['utterance'] for i in range(0,len(datas['turns'])+1,2)]
+        
+        user_token = list(map(preprocess.replace_lowfreq,user))
+        sys_token = list(map(preprocess.replace_lowfreq,system))
+        
+        user_vecs = list(map(preprocess.vectorize,user_token))
+        sys_vecs = list(map(preprocess.vectorize,sys_token))
+        #sys_vecs_past = [[]] + sys_vecs[:-1]
+        #print(len(user_vecs))
+            
+        user_vecs = sequence.pad_sequences(user_vecs,pad_size,dtype=np.float32)
+        sys_vecs = sequence.pad_sequences(sys_vecs,pad_size,dtype=np.float32)
+        #sys_vecs_past = sequence.pad_sequences(sys_vecs_past,pad_size,dtype=np.float32)
+        
+
+
+        probs = clf.predict([user_vecs,sys_vecs])
+            
+        breakdowns = translate(probs)
+        turnIndexes = [i for i in range(0,len(datas['turns'])+1,2)]
+        packed_results = {
+            "dialogue-id":dataID,
+            "turns":[
+                {
+                    "turn-index":turnIndex, 
+                    "labels":[{"breakdown":breakdown, "prob-O":float(prob[0]), "prob-T":float(prob[1]), "prob-X":float(prob[2])}]
+                }
+                for turnIndex, breakdown, prob in zip(turnIndexes, breakdowns, probs)
+            ]
+        }
+        json.dump(packed_results,open("./result/"+domain+"/"+dataID+".labels.json","w"))
