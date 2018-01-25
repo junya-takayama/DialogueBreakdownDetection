@@ -18,7 +18,7 @@ pad_size = 40
 class Trainer:
     def __init__(self,
                  model_classes, parameters, df_data='data/vecs.pickle', df_label='./data/annotations.pickle',
-                 max_epoch=50, batch_size=50, cluster_num=1,namehead='nomoto',pad_size=40,emb_size=512):
+                 max_epoch=50, batch_size=50, cluster_num=1,namehead='nomoto',pad_size=40,emb_size=512,mode='kmeans'):
         self.model_classes = model_classes
         self.params = parameters
         """
@@ -49,9 +49,17 @@ class Trainer:
         ignore_thre_max = 20000
         annotators = list(df_dist[(df_dist.annt_count >= ignore_thre_min) & (df_dist.annt_count <= ignore_thre_max)]['annt_id'])
         kmeans_feature = np.array(list(df_dist[(df_dist.annt_count >= ignore_thre_min) & (df_dist.annt_count <= ignore_thre_max)]['annt_dist']))
-        clusters = kmeans.fit_predict(kmeans_feature)
+        if mode == "kmeans":
+            clusters = kmeans.fit_predict(kmeans_feature)
+            annt_clusters = [list(map(lambda x:x[1],filter(lambda x:x[0] == i, zip(clusters,annotators)))) for i in range(cluster_num)]
+        elif mode == "random":
+            clusters = np.random.randint(0,cluster_num,len(kmeans_feature))
+            annt_clusters = [list(map(lambda x:x[1],filter(lambda x:x[0] == i, zip(clusters,annotators)))) for i in range(cluster_num)]
+        elif mode == "all":
+            clusters = np.array([-1 for i in range(len(kmeans_feature))])
+            annt_clusters = [annotators for i in range(cluster_num)]
 
-        self.annt_clusters = [list(map(lambda x:x[1],filter(lambda x:x[0] == i, zip(clusters,annotators)))) for i in range(cluster_num)]
+        self.annt_clusters = annt_clusters
         
         #tmp = pd.read_pickle(df_label).reset_index(drop=True).fillna(0).sum(axis=1).values
         #self.label = xp.array([list(i) for i in tmp]) / xp.array([[xp.sum(x)] * 3 for x in tmp])
@@ -194,5 +202,5 @@ if __name__ == '__main__':
                          "dr_ratio_sys": 0.2,
                      }
                  ],
-                 namehead=sys.argv[2])
+                 namehead=sys.argv[2],mode = sys.argv[3] if len(sys.argv) == 4 else 'kmeans')
     tr()

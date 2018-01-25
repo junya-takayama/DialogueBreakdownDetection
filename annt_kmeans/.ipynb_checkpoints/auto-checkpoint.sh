@@ -1,10 +1,10 @@
 #!/bin/bash
 mkdir $2
 
-for i in `seq 8 $1`
+for i in `seq 1 $1`
 do
     echo "学習開始 $i/$1"
-    python3 trainer.py $i $2 $3
+    #python3 trainer.py $i $2
     echo "学習終了 $i/$1"
     echo "評価用ファイル出力"
     python3 evaluate.py -n $i -k $2

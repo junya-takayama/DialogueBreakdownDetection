@@ -17,6 +17,15 @@ import glob
 import sys
 from sklearn.cluster import KMeans
 import utils
+from keras.backend.tensorflow_backend import set_session
+import tensorflow as tf
+
+config = tf.ConfigProto(
+    gpu_options=tf.GPUOptions(
+        allow_growth=True
+    )
+)
+set_session(tf.Session(config=config))
 
 wvdim=512
 
@@ -250,13 +259,13 @@ def swish(x):
 if __name__ == "__main__":
     n_clusters = int(sys.argv[1])
     namehead = sys.argv[2]
-    
+    mode = sys.argv[3] if len(sys.argv) >= 4 else "kmeans" #あとrandomとall
     df_annotations = pd.read_pickle('./data/annotations.pickle')
     df_vecs = pd.read_pickle("./data/vecs.pickle")
     users = df_vecs['user'].tolist()
     systems = df_vecs['system'].tolist()
     kmeans = KMeans(n_clusters=n_clusters)
-
+    
     annt_dist = [(annt,df_annotations[annt].mean(),df_annotations[annt].count()) for annt in df_annotations.keys()]
 
     df_dist = pd.DataFrame(annt_dist,columns=['annt_id','annt_dist','annt_count'])
@@ -265,11 +274,18 @@ if __name__ == "__main__":
     ignore_thre_max = 20000
     annotators = list(df_dist[(df_dist.annt_count >= ignore_thre_min) & (df_dist.annt_count <= ignore_thre_max)]['annt_id'])
     kmeans_feature = np.array(list(df_dist[(df_dist.annt_count >= ignore_thre_min) & (df_dist.annt_count <= ignore_thre_max)]['annt_dist']))
-    clusters = kmeans.fit_predict(kmeans_feature)
-
+    if mode == "kmeans":
+        clusters = kmeans.fit_predict(kmeans_feature)
+        annt_clusters = [list(map(lambda x:x[1],filter(lambda x:x[0] == i, zip(clusters,annotators)))) for i in range(n_clusters)]
+    elif mode == "random":
+        clusters = np.random.randint(0,n_clusters,len(kmeans_feature))
+        annt_clusters = [list(map(lambda x:x[1],filter(lambda x:x[0] == i, zip(clusters,annotators)))) for i in range(n_clusters)]
+    elif mode == "all":
+        clusters = np.array([-1 for i in range(len(kmeans_feature))])
+        annt_clusters = [annotators for i in range(n_clusters)]
     pad_size = 40
-    annt_clusters = [list(map(lambda x:x[1],filter(lambda x:x[0] == i, zip(clusters,annotators)))) for i in range(n_clusters)]
-
+    
+    
     try:
         os.mkdir('./models/classifier')
     except FileExistsError:
@@ -343,4 +359,3 @@ if __name__ == "__main__":
             validation_split = 0.15,
             shuffle=True,
         )
-    

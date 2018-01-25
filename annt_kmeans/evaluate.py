@@ -15,8 +15,18 @@ from sklearn.externals import joblib
 import sys
 import time
 from utils import Preprocess, Ensemble,translate,EnsembleNomoto
-
+from keras.backend.tensorflow_backend import set_session
+import tensorflow as tf
 import argparse
+
+config = tf.ConfigProto(
+    gpu_options=tf.GPUOptions(
+        allow_growth=True
+    )
+)
+set_session(tf.Session(config=config))
+
+
 
 parser = argparse.ArgumentParser() # parserを作る
 parser.add_argument('-k', '--keras') # オプションを追加します
@@ -42,8 +52,8 @@ model_nmt_dir = './models/Series_LSTM/'
 from gensim.models import word2vec
 w2vpath='./models/w2v/w2v_512.model'
 w2v = word2vec.Word2Vec.load(w2vpath)
-clf_tkym = Ensemble(namehead_keras,n_clusters_keras,method='mean',normalization='norm')
-clf_nmt = EnsembleNomoto(namehead_chainer,n_clusters_chainer,method='mean',normalization='norm')
+clf_tkym = Ensemble(namehead_keras,n_clusters_keras,method='average',normalization='norm')
+clf_nmt = EnsembleNomoto(namehead_chainer,n_clusters_chainer,method='average',normalization='norm')
 preprocess = Preprocess(w2vpath=w2vpath)
 pad_size = 40
 

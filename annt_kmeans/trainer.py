@@ -17,6 +17,15 @@ import glob
 import sys
 from sklearn.cluster import KMeans
 import utils
+from keras.backend.tensorflow_backend import set_session
+import tensorflow as tf
+
+config = tf.ConfigProto(
+    gpu_options=tf.GPUOptions(
+        allow_growth=False
+    )
+)
+set_session(tf.Session(config=config))
 
 wvdim=512
 
@@ -119,6 +128,48 @@ def conv_attn(kernel_sizes,batch_input_shape):
     
     return Model(input=inp, output=out)
 
+def conv_attn_2(kernel_sizes,batch_input_shape):
+    inp = Input(shape=batch_input_shape[1:])
+    filtersize = int(batch_input_shape[2]/2)
+    convs = []
+    for kernel_size in kernel_sizes:
+        conv1 = Conv1D(
+            filtersize,
+            kernel_size,
+            padding='causal',
+            activation='relu',
+            dilation_rate = 1,
+            strides=1,
+            batch_input_shape=batch_input_shape,init='uniform',kernel_regularizer=l2(0.00005)
+        )(inp)
+        conv2 = Conv1D(
+            filtersize,
+            kernel_size,
+            padding='causal',
+            activation='relu',
+            dilation_rate = 1,
+            strides=1,
+            batch_input_shape=batch_input_shape,init='uniform',kernel_regularizer=l2(0.00005)
+        )(inp)
+        
+        unitsize = filtersize
+        attention = TimeDistributed(Dense(1, activation='relu'))(conv2) 
+        attention = Flatten()(attention)
+        attention = Activation('softmax')(attention)
+        attention = RepeatVector(unitsize)(attention)
+        attention = Permute([2, 1])(attention)
+        attention = Multiply()([conv1, attention])
+        attention = Lambda(lambda xin: K.sum(xin, axis=-2))(attention)
+        convs.append(attention)
+        
+    if len(kernel_sizes) > 1:
+        out = Concatenate()(convs)
+    else:
+        out = convs[0]
+    unitsize = len(kernel_sizes) * filtersize
+    #out = Flatten()(out)
+    
+    return Model(input=inp, output=out)
 
 
 
@@ -142,11 +193,11 @@ def direct_attn(kernel_sizes,batch_input_shape):
 class Classifier:
     def __init__(self,n_class=3,batch_size=100,pad_size=40,wvdim=512,weight=np.array([1,1,1]),kernel_sizes=[3,5]):
         encoder_a = Sequential()
-        encoder_a.add(direct_attn(kernel_sizes,(None, pad_size, wvdim)))
+        encoder_a.add(conv_attn_2(kernel_sizes,(None, pad_size, wvdim)))
         #encoder_a.add(GRU(output_dim=wvdim, return_sequences=True,dropout_U=0.6,batch_input_shape=(None, pad_size, wvdim)))
         
         encoder_b = Sequential()
-        encoder_b.add(direct_attn(kernel_sizes,(None, pad_size, wvdim)))     
+        encoder_b.add(conv_attn_2(kernel_sizes,(None, pad_size, wvdim)))     
         #encoder_b.add(GRU(output_dim=wvdim, return_sequences=True,dropout_U=0.6,batch_input_shape=(None, pad_size, wvdim)))
         
         decoder = Sequential()
@@ -201,17 +252,20 @@ class Extended:
         self.mean = Weighted(np.array([1,1,1]))
     def jsd(self,y_true, y_pred):
         return self.mean.wjsd(y_true,y_pred)
+    
+def swish(x):
+    return x * K.sigmoid(x)
 
 if __name__ == "__main__":
     n_clusters = int(sys.argv[1])
     namehead = sys.argv[2]
-    
+    mode = sys.argv[3] if len(sys.argv) >= 4 else "kmeans" #あとrandomとall
     df_annotations = pd.read_pickle('./data/annotations.pickle')
     df_vecs = pd.read_pickle("./data/vecs.pickle")
     users = df_vecs['user'].tolist()
     systems = df_vecs['system'].tolist()
     kmeans = KMeans(n_clusters=n_clusters)
-
+    
     annt_dist = [(annt,df_annotations[annt].mean(),df_annotations[annt].count()) for annt in df_annotations.keys()]
 
     df_dist = pd.DataFrame(annt_dist,columns=['annt_id','annt_dist','annt_count'])
@@ -220,11 +274,18 @@ if __name__ == "__main__":
     ignore_thre_max = 20000
     annotators = list(df_dist[(df_dist.annt_count >= ignore_thre_min) & (df_dist.annt_count <= ignore_thre_max)]['annt_id'])
     kmeans_feature = np.array(list(df_dist[(df_dist.annt_count >= ignore_thre_min) & (df_dist.annt_count <= ignore_thre_max)]['annt_dist']))
-    clusters = kmeans.fit_predict(kmeans_feature)
-
+    if mode == "kmeans":
+        clusters = kmeans.fit_predict(kmeans_feature)
+        annt_clusters = [list(map(lambda x:x[1],filter(lambda x:x[0] == i, zip(clusters,annotators)))) for i in range(n_clusters)]
+    elif mode == "random":
+        clusters = np.random.randint(0,n_clusters,len(kmeans_feature))
+        annt_clusters = [list(map(lambda x:x[1],filter(lambda x:x[0] == i, zip(clusters,annotators)))) for i in range(n_clusters)]
+    elif mode == "all":
+        clusters = np.array([-1 for i in range(len(kmeans_feature))])
+        annt_clusters = [annotators for i in range(n_clusters)]
     pad_size = 40
-    annt_clusters = [list(map(lambda x:x[1],filter(lambda x:x[0] == i, zip(clusters,annotators)))) for i in range(n_clusters)]
-
+    
+    
     try:
         os.mkdir('./models/classifier')
     except FileExistsError:
@@ -298,4 +359,3 @@ if __name__ == "__main__":
             validation_split = 0.15,
             shuffle=True,
         )
-    

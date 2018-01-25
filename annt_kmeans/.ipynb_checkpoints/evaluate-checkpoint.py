@@ -42,8 +42,8 @@ model_nmt_dir = './models/Series_LSTM/'
 from gensim.models import word2vec
 w2vpath='./models/w2v/w2v_512.model'
 w2v = word2vec.Word2Vec.load(w2vpath)
-clf_tkym = Ensemble(namehead_keras,n_clusters_keras,method='mean',normalization='norm')
-clf_nmt = EnsembleNomoto(namehead_chainer,n_clusters_chainer,method='mean',normalization='norm')
+clf_tkym = Ensemble(namehead_keras,n_clusters_keras,method='average',normalization='norm')
+clf_nmt = EnsembleNomoto(namehead_chainer,n_clusters_chainer,method='average',normalization='norm')
 preprocess = Preprocess(w2vpath=w2vpath)
 pad_size = 40
 

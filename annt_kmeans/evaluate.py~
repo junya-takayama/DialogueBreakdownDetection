@@ -7,22 +7,43 @@ from keras.preprocessing import sequence
 from keras.layers.wrappers import Bidirectional
 import numpy as np
 import pickle
+import os
 from sklearn.cluster import KMeans,DBSCAN
 from sklearn.neighbors import KNeighborsClassifier
 from pprint import pprint
 from sklearn.externals import joblib
 import sys
 import time
-from utils import Preprocess, Ensemble,translate
+from utils import Preprocess, Ensemble,translate,EnsembleNomoto
 
-n_clusters = int(sys.argv[1])
-namehead = sys.argv[2]
+import argparse
 
-modeldir = './models/classifier/'  
+parser = argparse.ArgumentParser() # parserを作る
+parser.add_argument('-k', '--keras') # オプションを追加します
+parser.add_argument('-n', '--kofkeras')
+parser.add_argument('-c', '--chainer') # 
+parser.add_argument('-m', '--kofchainer') # 
+parser.add_argument('-r', '--referencedir') # 
+parser.add_argument('-o', '--outputdir') # 
+args = parser.parse_args()
+print(args)
+
+n_clusters_keras = 0 if args.kofkeras is None else int(args.kofkeras)
+namehead_keras = args.keras
+n_clusters_chainer =0 if args.kofchainer is None else int(args.kofchainer)
+namehead_chainer = args.chainer
+
+refdir = args.referencedir if args.referencedir is not None else "../dbdc3_jp_eval_allOs/"
+savedir = args.outputdir if args.outputdir is not None else "./result/"
+os.system("mkdir %s"%savedir)
+
+model_tkym_dir = './models/classifier/'  
+model_nmt_dir = './models/Series_LSTM/'  
 from gensim.models import word2vec
 w2vpath='./models/w2v/w2v_512.model'
 w2v = word2vec.Word2Vec.load(w2vpath)
-clf = Ensemble(namehead,n_clusters,method='mean',normalization='norm')
+clf_tkym = Ensemble(namehead_keras,n_clusters_keras,method='max',normalization='norm')
+clf_nmt = EnsembleNomoto(namehead_chainer,n_clusters_chainer,method='max',normalization='norm')
 preprocess = Preprocess(w2vpath=w2vpath)
 pad_size = 40
 
@@ -46,7 +67,8 @@ class Progress:
         
         
 for domain in ["DCM","DIT","IRS"]:
-    fps = glob.glob("../DBDC2_ref/"+domain+"/*.json")
+    os.system("mkdir %s/%s"%(savedir,domain))
+    fps = glob.glob(refdir.rstrip("/")+"/"+domain+"/*.json")
     prog = Progress(len(fps),domain)
     for fp in fps:
         datas = json.load(open(fp,'r'))
@@ -69,8 +91,12 @@ for domain in ["DCM","DIT","IRS"]:
         #sys_vecs_past = sequence.pad_sequences(sys_vecs_past,pad_size,dtype=np.float32)
         
 
-
-        probs = clf.predict([user_vecs,sys_vecs])
+        probs = []
+        if namehead_keras:
+            probs.append(clf_tkym.ensemble(clf_tkym.predict([user_vecs,sys_vecs])))
+        if namehead_chainer:
+            probs.append(clf_nmt.ensemble(clf_nmt.predict([user_vecs.transpose(1,0,2),sys_vecs.transpose(1,0,2)])))
+        probs = clf_tkym.ensemble(np.array(probs))
             
         breakdowns = translate(probs)
         turnIndexes = [i for i in range(0,len(datas['turns'])+1,2)]
@@ -79,9 +105,9 @@ for domain in ["DCM","DIT","IRS"]:
             "turns":[
                 {
                     "turn-index":turnIndex, 
-                    "labels":[{"breakdown":breakdown, "prob-O":float(prob[0]), "prob-T":float(prob[1]), "prob-X":float(prob[2])}]
+                    "labels":[{"breakdown":breakdown, "prob-O":round(float(prob[0]),2), "prob-T":round(float(prob[1]),2), "prob-X":round(float(prob[2]),2)}]
                 }
                 for turnIndex, breakdown, prob in zip(turnIndexes, breakdowns, probs)
             ]
         }
-        json.dump(packed_results,open("./result/"+domain+"/"+dataID+".labels.json","w"))
+        json.dump(packed_results,open(savedir.rstrip("/")+"/"+domain+"/"+dataID+".labels.json","w"))

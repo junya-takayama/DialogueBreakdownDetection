@@ -85,7 +85,7 @@ def translate(preds):
 
 class Ensemble:
     def __init__(self,namehead,n_clusters,method='max',normalization='norm',modeldir='./models/classifier/'):
-        self.method = np.average if method is 'average' else np.max
+        self.method = np.sum if method is 'average' else np.max
         self.normalization = softmax if normalization == 'softmax' else norm
         try:
             self.clf = keras.models.model_from_yaml(open(modeldir+namehead+'_k_'+str(n_clusters)+'.yaml'))
@@ -99,11 +99,11 @@ class Ensemble:
             res.append(self.clf.predict(x))
         return res
     def ensemble(self,y):
-        return self.normalization(np.sum(y,axis=0))
+        return self.normalization(self.method(y,axis=0))
         
 class EnsembleNomoto:
     def __init__(self,namehead,n_clusters,method='max',normalization='norm',modeldir='./models/Series_LSTM/'):
-        self.method = np.average if method is 'average' else np.max
+        self.method = np.sum if method is 'average' else np.max
         self.normalization = softmax if normalization == 'softmax' else norm
         try:
             self.clf = Series_LSTM(
@@ -124,5 +124,5 @@ class EnsembleNomoto:
             res.append(cuda.to_cpu(self.clf(x[0],x[1]).data))
         return res
     def ensemble(self,y):
-        return self.normalization(np.sum(y,axis=0))
+        return self.normalization(self.method(y,axis=0))
     

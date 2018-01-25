@@ -6,9 +6,13 @@ import MeCab
 from gensim.models import word2vec
 from functools import reduce
 import keras
+from Series_LSTM import Series_LSTM
+from chainer import serializers
+from chainer import cuda
+from trainer import swish, Classifier
 
 class Preprocess:
-    def __init__(self,lf_path = './models/w2v/低頻度語.pickle',w2vpath='./models/w2v/w2v_size1024_mc1000_w5.model'):
+    def __init__(self,lf_path = './models/w2v/低頻度語.pickle',w2vpath='./models/w2v/w2v_512.model'):
         self.mc = MeCab.Tagger('mecabrc -F%m,%f[0]\\n')
         self.lowfreq = pickle.load(open(lf_path,'rb'))
         self.w2v = word2vec.Word2Vec.load(w2vpath)
@@ -84,12 +88,43 @@ class Ensemble:
     def __init__(self,namehead,n_clusters,method='max',normalization='norm',modeldir='./models/classifier/'):
         self.method = np.average if method is 'average' else np.max
         self.normalization = softmax if normalization == 'softmax' else norm
-        self.clf = keras.models.model_from_yaml(open(modeldir+namehead+'_k_'+str(n_clusters)+'.yaml'))
-        self.weights = glob.glob(modeldir+namehead+'_k_'+str(n_clusters)+'_*.weight')
+        try:
+            self.clf = keras.models.model_from_yaml(open(modeldir+namehead+'_k_'+str(n_clusters)+'.yaml'))
+            #self.clf = Classifier().decoder
+            self.weights = glob.glob(modeldir+namehead+'_k_'+str(n_clusters)+'_*.weight')
+        except:
+            print("keras models have not been loaded")
     def predict(self,x):
         res = []
         for weight in self.weights:
             self.clf.load_weights(weight)
             res.append(self.clf.predict(x))
-        return softmax(np.sum(res,axis=0))
+        return res
+    def ensemble(self,y):
+        return self.normalization(np.max(y,axis=0))
         
+class EnsembleNomoto:
+    def __init__(self,namehead,n_clusters,method='max',normalization='norm',modeldir='./models/Series_LSTM/'):
+        self.method = np.average if method is 'average' else np.max
+        self.normalization = softmax if normalization == 'softmax' else norm
+        try:
+            self.clf = Series_LSTM(
+                parameters={
+                    "hidden_size": 256,
+                    "batch_size": 50,
+                    "dr_ratio_sys": 0.2,
+                }, 
+                dr_ratio_sys=0.2)
+            self.clf.to_gpu()
+            self.weights = glob.glob(modeldir+namehead+'_k_'+str(n_clusters)+'_*.model')
+        except:
+            print("chainer models have not been loaded")
+    def predict(self,x):
+        res = []
+        for weight in self.weights:
+            serializers.load_hdf5(weight, self.clf)
+            res.append(cuda.to_cpu(self.clf(x[0],x[1]).data))
+        return res
+    def ensemble(self,y):
+        return self.normalization(np.max(y,axis=0))
+    
