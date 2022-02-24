@@ -11,7 +11,6 @@ import os
 from sklearn.cluster import KMeans,DBSCAN
 from sklearn.neighbors import KNeighborsClassifier
 from pprint import pprint
-from sklearn.externals import joblib
 import sys
 import time
 from utils import Preprocess, Ensemble,translate,EnsembleNomoto
@@ -43,7 +42,7 @@ namehead_keras = args.keras
 n_clusters_chainer =0 if args.kofchainer is None else int(args.kofchainer)
 namehead_chainer = args.chainer
 
-refdir = args.referencedir if args.referencedir is not None else "../DBDC2_ref/"
+refdir = args.referencedir if args.referencedir is not None else "./data/DBDC2_ref/"
 savedir = args.outputdir if args.outputdir is not None else "./result/"
 os.system("mkdir %s"%savedir)
 

@@ -1,0 +1,14 @@
+.ipynb_checkpoints
+*.pt
+/data
+__pycache__/
+*~
+\#+\#
+/models
+/random_lstm
+/random_cnn
+/kmeans_cnn
+/kmeans_lstm
+/result
+/rg_results
+/dbdc3_result

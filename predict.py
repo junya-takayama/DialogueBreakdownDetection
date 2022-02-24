@@ -11,16 +11,26 @@ import os
 from sklearn.cluster import KMeans,DBSCAN
 from sklearn.neighbors import KNeighborsClassifier
 from pprint import pprint
-from sklearn.externals import joblib
 import sys
 import time
 from utils import Preprocess, Ensemble,translate,EnsembleNomoto
 from gensim.models import word2vec
 import argparse
+import cupy
+import pandas as pd
+from tqdm import tqdm
+from sklearn.metrics import f1_score
+from keras.backend.tensorflow_backend import set_session
+import tensorflow as tf
+
+config = tf.ConfigProto(
+    gpu_options=tf.GPUOptions(
+        allow_growth=True
+    )
+)
+set_session(tf.Session(config=config))
 
 
-
-        
 class Progress:
     def __init__(self,Max,domain):
         self.max = Max
@@ -80,8 +90,8 @@ class Predictor:
         probs = self.clf_tkym.ensemble(np.array(probs))
 
         breakdowns = translate(probs)
-        print("breakdown: ",list(zip(user,system,breakdowns)))
-        return list(zip(user,system,breakdowns,probs))
+        #print("breakdown: ",list(zip(user,system,breakdowns)))
+        return breakdowns
         
 
 if __name__ == "__main__":
@@ -91,7 +101,9 @@ if __name__ == "__main__":
     parser.add_argument('-c', '--chainer') # 
     parser.add_argument('-m', '--kofchainer') # 
     parser.add_argument('-r', '--referencedir') # 
-    parser.add_argument('-o', '--outputdir') # 
+    parser.add_argument('-o', '--output_path', default="") # 
+
+    parser.add_argument('-d', '--data') # 
     args = parser.parse_args()
     print(args)
 
@@ -99,7 +111,6 @@ if __name__ == "__main__":
     namehead_keras = args.keras
     n_clusters_chainer =0 if args.kofchainer is None else int(args.kofchainer)
     namehead_chainer = args.chainer
-
     
     predict = Predictor(
         n_clusters_keras = n_clusters_keras,
@@ -108,8 +119,26 @@ if __name__ == "__main__":
         namehead_chainer =  namehead_chainer,
         pad_size =40
     )
-    while(1):
-        predict.predict(input("user: "),input("system: "))
+    if args.data:
+        data = pd.read_csv(args.data)
+        y_preds = []
+        for i in range(0, len(data), 3):
+            batch = data[i:i+3]
+            user = batch.utterance
+            system = batch.reply
+            y_preds.extend(predict.predict(user, system))
+            y_preds = ["O" if y=="T" else y for y in y_preds]
+        y_trues = data.label
+        if args.output_path != "":
+            data["pred_labels"] = y_preds
+            data["true_labels"] = y_trues
+            data.to_csv(args.output_path)
+        print("f(X):",f1_score(y_trues, y_preds, pos_label="X", average="binary"))
+        print("f_micro:",f1_score(y_trues, y_preds, pos_label="X", average="micro"))
+        print("f_macro:",f1_score(y_trues, y_preds, pos_label="X", average="macro"))
+    else:
+        while(1):
+            print(predict.predict(input("user: "),input("system: ")))
     """
     packed_results = {
         "dialogue-id":dataID,

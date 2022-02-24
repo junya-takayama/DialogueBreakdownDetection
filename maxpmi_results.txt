@@ -1,0 +1,41 @@
+CNN_single
+Namespace(chainer=None, data='./data/maxpmi/data_undersampled.csv', keras='kmeans_cnn', kofchainer=None, kofkeras='1', outputdir=None, referencedir=None)
+chainer models have not been loaded
+f(X): 0.25
+f_micro: 0.5565217391304348
+f_macro: 0.46759259259259256
+LSTM_single
+Namespace(chainer='kmeans_lstm', data='./data/maxpmi/data_undersampled.csv', keras=None, kofchainer='1', kofkeras=None, outputdir=None, referencedir=None)
+keras models have not been loaded
+f(X): 0.2556390977443609
+f_micro: 0.5695652173913044
+f_macro: 0.4764434020831896
+CNN:5
+Namespace(chainer=None, data='./data/maxpmi/data_undersampled.csv', keras='kmeans_cnn', kofchainer=None, kofkeras='5', outputdir=None, referencedir=None)
+chainer models have not been loaded
+f(X): 0.6215139442231076
+f_micro: 0.5869565217391305
+f_macro: 0.5834842448388264
+LSTM:5
+Namespace(chainer='kmeans_lstm', data='./data/maxpmi/data_undersampled.csv', keras=None, kofchainer='5', kofkeras=None, outputdir=None, referencedir=None)
+keras models have not been loaded
+f(X): 0.5726495726495726
+f_micro: 0.5652173913043478
+f_macro: 0.565085848271689
+CNN+LSTM:5
+Namespace(chainer='kmeans_lstm', data='./data/maxpmi/data_undersampled.csv', keras='kmeans_cnn', kofchainer='5', kofkeras='5', outputdir=None, referencedir=None)
+f(X): 0.6434108527131783
+f_micro: 0.6
+f_macro: 0.5939826540793615
+CNN_random:7
+Namespace(chainer=None, data='./data/maxpmi/data_undersampled.csv', keras='random_cnn', kofchainer=None, kofkeras='7', outputdir=None, referencedir=None)
+chainer models have not been loaded
+f(X): 0.19696969696969696
+f_micro: 0.5391304347826087
+f_macro: 0.43689948263118994
+LSTM_random:10
+Namespace(chainer='random_lstm', data='./data/maxpmi/data_undersampled.csv', keras=None, kofchainer='10', kofkeras=None, outputdir=None, referencedir=None)
+keras models have not been loaded
+f(X): 0.11382113821138212
+f_micro: 0.5260869565217391
+f_macro: 0.3951895008564329

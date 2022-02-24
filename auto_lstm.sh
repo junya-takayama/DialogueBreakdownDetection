@@ -11,7 +11,7 @@ do
     echo "評価結果出力中"
     for domain in DCM DIT IRS
     do
-	python eval.py -p ../DBDC2_ref/${domain} -o ./result/${domain} -t 0.0 > ./${2}/${domain}_${i}.txt
+	python eval.py -p ./data/DBDC2_ref/${domain} -o ./result/${domain} -t 0.0 > ./${2}/${domain}_${i}.txt
     done
     echo "プロセス終了 $i/$1"
 done

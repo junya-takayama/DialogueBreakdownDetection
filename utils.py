@@ -10,6 +10,7 @@ from Series_LSTM import Series_LSTM
 from chainer import serializers
 from chainer import cuda
 
+
 class Preprocess:
     def __init__(self,lf_path = './models/w2v/低頻度語.pickle',w2vpath='./models/w2v/w2v_512.model'):
         self.mc = MeCab.Tagger('mecabrc -F%m,%f[0]\\n')
@@ -103,6 +104,7 @@ class Ensemble:
         
 class EnsembleNomoto:
     def __init__(self,namehead,n_clusters,method='max',normalization='norm',modeldir='./models/Series_LSTM/'):
+
         self.method = np.sum if method is 'average' else np.max
         self.normalization = softmax if normalization == 'softmax' else norm
         try:

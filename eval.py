@@ -226,33 +226,56 @@ def main():
 
     #print str(predX_ansO_l + predX_ansX_l + predT_ansO_l + predT_ansX_l + predO_ansX_l + predO_ansO_l)
 
-    print "######### Data Stats #########"
-    print "File Num : \t\t" + str(file_num)
-    print "System Utterance Num : \t" + str(label_num)
-    print "O Label Num : \t\t" + str(predO_ansO + predT_ansO + predX_ansO)
-    print "T Label Num : \t\t" + str(predO_ansT + predT_ansT + predX_ansT)
-    print "X Label Num : \t\t" + str(predO_ansX + predT_ansX + predX_ansX)
-    print ""
+    print("######### Data Stats #########")
+    print("File Num : \t\t" + str(file_num))
+    print("System Utterance Num : \t" + str(label_num))
+    print("O Label Num : \t\t" + str(predO_ansO + predT_ansO + predX_ansO))
+    print("T Label Num : \t\t" + str(predO_ansT + predT_ansT + predX_ansT))
+    print("X Label Num : \t\t" + str(predO_ansX + predT_ansX + predX_ansX))
+    print("")
 
-    print "######### Results #########"
-    print "Accuracy : \t\t%4f" % ((correct_num*1.0) / (correct_num + incorrect_num)) + " (" + str(correct_num) + "/" + str(correct_num + incorrect_num) + ")\n"
+    print("######### Results #########")
+    print("Accuracy : \t\t%4f" % ((correct_num*1.0) / (correct_num + incorrect_num)) + " (" + str(correct_num) + "/" + str(correct_num + incorrect_num) + ")\n")
 
     precision_s = 0.0
     recall_s = 0.0
     fmeasure_s = 0.0
+    precision_t = 0.0
+    recall_t = 0.0
+    fmeasure_t = 0.0
+    precision_o = 0.0
+    recall_o = 0.0
+    fmeasure_o = 0.0
 
     if predX_ansX > 0:
         if (predX_ansO + predX_ansT + predX_ansX) > 0:
             precision_s = predX_ansX*1.0 / (predX_ansO + predX_ansT + predX_ansX)
         if (predO_ansX + predT_ansX + predX_ansX) > 0:
             recall_s = predX_ansX*1.0 / (predO_ansX + predT_ansX + predX_ansX)
-
+            
+    if predT_ansT > 0:
+        if (predT_ansO + predT_ansT + predT_ansX) > 0:
+            precision_t = predT_ansT*1.0 / (predT_ansO + predT_ansT + predT_ansX)
+        if (predO_ansT + predT_ansT + predX_ansT) > 0:
+            recall_t = predT_ansT*1.0 / (predO_ansT + predT_ansT + predX_ansT)
+            
+    if predO_ansO > 0:
+        if (predO_ansO + predO_ansT + predO_ansX) > 0:
+            precision_o = predO_ansO*1.0 / (predO_ansO + predO_ansT + predO_ansX)
+        if (predO_ansO + predT_ansO + predX_ansO) > 0:
+            recall_o = predO_ansO*1.0 / (predO_ansO + predT_ansO + predX_ansO)
+            
     if precision_s > 0 and recall_s > 0:
         fmeasure_s = (2*precision_s*recall_s)/(precision_s + recall_s)
+    if precision_t > 0 and recall_t > 0:
+        fmeasure_t = (2*precision_t*recall_t)/(precision_t + recall_t)
+    if precision_o > 0 and recall_o > 0:
+        fmeasure_o = (2*precision_o*recall_o)/(precision_o + recall_o)
 
-    print "Precision (X) : \t%4f" % (precision_s) + " (" + str(predX_ansX) + "/" + str(predX_ansO + predX_ansT + predX_ansX) + ")"
-    print "Recall    (X) : \t%4f" % (recall_s) + " (" + str(predX_ansX) + "/" + str(predO_ansX + predT_ansX + predX_ansX) + ")"
-    print "F-measure (X) : \t%4f" % (fmeasure_s) + "\n"
+    print("Precision (X) : \t%4f" % (precision_s) + " (" + str(predX_ansX) + "/" + str(predX_ansO + predX_ansT + predX_ansX) + ")")
+    print("Recall    (X) : \t%4f" % (recall_s) + " (" + str(predX_ansX) + "/" + str(predO_ansX + predT_ansX + predX_ansX) + ")")
+    print("F-measure (X) : \t%4f" % (fmeasure_s) + "\n")
+    print("F-measure macro : \t%4f" % ((fmeasure_s + fmeasure_t + fmeasure_o) / 3) + "\n")
 
 
     precision_l = 0.0
@@ -267,18 +290,18 @@ def main():
 
 
 
-    print "Precision (T+X) : \t%4f" % (precision_l) + " (" + str(predT_ansX_l + predX_ansX_l) + "/" + str(predX_ansO_l + predX_ansX_l + predT_ansO_l + predT_ansX_l) + ")"
-    print "Recall    (T+X) : \t%4f" % (recall_l) + " (" + str(predT_ansX_l + predX_ansX_l) + "/" + str(predO_ansX_l + predT_ansX_l + predX_ansX_l) + ")"
-    print "F-measure (T+X) : \t%4f" % (fmeasure_l) + "\n"
+    print("Precision (T+X) : \t%4f" % (precision_l) + " (" + str(predT_ansX_l + predX_ansX_l) + "/" + str(predX_ansO_l + predX_ansX_l + predT_ansO_l + predT_ansX_l) + ")")
+    print("Recall    (T+X) : \t%4f" % (recall_l) + " (" + str(predT_ansX_l + predX_ansX_l) + "/" + str(predO_ansX_l + predT_ansX_l + predX_ansX_l) + ")")
+    print("F-measure (T+X) : \t%4f" % (fmeasure_l) + "\n")
 
-    print "JS divergence (O,T,X) : \t%4f" % (jsd_O_T_X_sum / (correct_num + incorrect_num))
-    print "JS divergence (O,T+X) : \t%4f" % (jsd_O_TX_sum / (correct_num + incorrect_num))
-    print "JS divergence (O+T,X) : \t%4f" % (jsd_OT_X_sum / (correct_num + incorrect_num)) + "\n"
+    print("JS divergence (O,T,X) : \t%4f" % (jsd_O_T_X_sum / (correct_num + incorrect_num)))
+    print("JS divergence (O,T+X) : \t%4f" % (jsd_O_TX_sum / (correct_num + incorrect_num)))
+    print("JS divergence (O+T,X) : \t%4f" % (jsd_OT_X_sum / (correct_num + incorrect_num)) + "\n")
 
-    print "Mean squared error (O,T,X) : \t%4f" % (mse_O_T_X_sum / (correct_num + incorrect_num))
-    print "Mean squared error (O,T+X) : \t%4f" % (mse_O_TX_sum / (correct_num + incorrect_num))
-    print "Mean squared error (O+T,X) : \t%4f" % (mse_OT_X_sum / (correct_num + incorrect_num))
-    print "###########################"
+    print("Mean squared error (O,T,X) : \t%4f" % (mse_O_T_X_sum / (correct_num + incorrect_num)))
+    print("Mean squared error (O,T+X) : \t%4f" % (mse_O_TX_sum / (correct_num + incorrect_num)))
+    print("Mean squared error (O+T,X) : \t%4f" % (mse_OT_X_sum / (correct_num + incorrect_num)))
+    print("###########################")
 
 
 if __name__ == '__main__':

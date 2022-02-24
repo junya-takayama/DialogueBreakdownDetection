@@ -5,7 +5,6 @@
 
 
 import pandas as pd
-df_vec = pd.read_pickle('data/vecs.pickle')
 
 # In[2]:
 
@@ -255,6 +254,8 @@ def train(emb_size, usr_words, sys_words, labels, max_epoch=50, model_name='mode
 
 # In[ ]:
 if __name__ == '__main__':
+    df_vec = pd.read_pickle('data/vecs.pickle')
+
     sys_X_train = df_vec['system'].values
     usr_X_train = df_vec['user'].values
     emb_size = max(e.shape[-1] for e in sys_X_train)

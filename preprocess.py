@@ -8,12 +8,12 @@ import pandas as pd
 
 preprocess = Preprocess(w2vpath='./models/w2v/w2v_512.model')
 
-fps = glob.glob('../projectnextnlp-chat-dialogue-corpus/json/rest1046/*.json')
-fps.extend(glob.glob('../DCM/*.json'))
-fps.extend(glob.glob('../DIT/*.json'))
-fps.extend(glob.glob('../IRS/*.json'))
-fps.extend(glob.glob('../dev/*.json'))
-fps.extend(glob.glob('../projectnextnlp-chat-dialogue-corpus/json/init100/*.json'))
+fps = glob.glob('./data/projectnextnlp-chat-dialogue-corpus/json/rest1046/*.json')
+fps.extend(glob.glob('./data/DBDC2_dev/DCM/*.json'))
+fps.extend(glob.glob('./data/DBDC2_dev/DIT/*.json'))
+fps.extend(glob.glob('./data/DBDC2_dev/IRS/*.json'))
+fps.extend(glob.glob('./data/DBDC1/dev/*.json'))
+fps.extend(glob.glob('./data/projectnextnlp-chat-dialogue-corpus/json/init100/*.json'))
 
 kind = ('O','T','X')
 f = lambda x: np.eye(3)[kind.index(x)]

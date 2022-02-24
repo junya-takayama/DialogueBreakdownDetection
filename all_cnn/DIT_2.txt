@@ -1,0 +1,28 @@
+######### Data Stats #########
+File Num : 		50
+System Utterance Num : 	550
+O Label Num : 		184
+T Label Num : 		102
+X Label Num : 		264
+
+######### Results #########
+Accuracy : 		0.605455 (333/550)
+
+Precision (X) : 	0.585185 (237/405)
+Recall    (X) : 	0.897727 (237/264)
+F-measure (X) : 	0.708520
+
+F-measure macro : 	0.446223
+
+Precision (T+X) : 	0.865854 (355/410)
+Recall    (T+X) : 	0.861650 (355/412)
+F-measure (T+X) : 	0.863747
+
+JS divergence (O,T,X) : 	0.060249
+JS divergence (O,T+X) : 	0.040696
+JS divergence (O+T,X) : 	0.039896
+
+Mean squared error (O,T,X) : 	0.032379
+Mean squared error (O,T+X) : 	0.038454
+Mean squared error (O+T,X) : 	0.044826
+###########################
